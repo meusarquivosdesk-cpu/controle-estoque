@@ -81,15 +81,16 @@
       pointer-events: none;
     }
 
-    .grid-top{
+    /* ✅ AGORA É UM BLOCO ÚNICO (um abaixo do outro) */
+    .stack-top{
       display:grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 20px;
     }
 
     .entrada{ border-top: 6px solid var(--brand-gold); }
     .saida{ border-top: 6px solid var(--brand-red); }
-    .dashboard{ margin-top: 20px; border-top: 6px solid var(--brand-red-dark); }
+    .dashboard{ border-top: 6px solid var(--brand-red-dark); }
 
     h2{
       margin: 0 0 12px 0;
@@ -323,7 +324,6 @@
     }
 
     @media (max-width: 980px){
-      .grid-top{ grid-template-columns: 1fr; }
       .cards-dashboard{ grid-template-columns: 1fr; }
       .date-range .field{ min-width: 140px; }
     }
@@ -343,7 +343,8 @@
   <div class="container">
     <div class="page-title">Controle de Estoque</div>
 
-    <div class="grid-top">
+    <!-- ✅ AGORA: 3 BLOCOS UM ABAIXO DO OUTRO -->
+    <div class="stack-top">
       <div class="card entrada">
         <h2>Entrada de Material</h2>
 
@@ -412,73 +413,73 @@
           <tbody id="tabela-saidas"></tbody>
         </table>
       </div>
-    </div>
 
-    <div class="card dashboard">
-      <h2>Saldo em Estoque</h2>
+      <div class="card dashboard">
+        <h2>Saldo em Estoque</h2>
 
-      <div class="cards-dashboard">
-        <div class="card-info total">
-          <strong>Estoque (por Material)</strong>
-          <div class="card-line">
-            <select id="dash-materialSelect">
-              <option value="">Carregando…</option>
-            </select>
-          </div>
-          <div class="card-big"><span id="dash-materialSaldo">0</span></div>
-          <div class="card-sub">Saldo no intervalo selecionado</div>
-        </div>
-
-        <div class="card-info critico">
-          <strong>Materiais Críticos (Top 5)</strong>
-          <div class="card-sub">Ordenado pelo pior déficit (Saldo − Mínimo)</div>
-          <ul class="crit-list" id="dash-criticosTop5"></ul>
-        </div>
-      </div>
-
-      <!-- CONTROLES: Intervalo + modo -->
-      <div class="dash-controls">
-        <div class="date-range">
-          <div class="field">
-            <label for="filtro-de">De</label>
-            <input id="filtro-de" type="date">
-          </div>
-          <div class="field">
-            <label for="filtro-ate">Até</label>
-            <input id="filtro-ate" type="date">
+        <div class="cards-dashboard">
+          <div class="card-info total">
+            <strong>Estoque (por Material)</strong>
+            <div class="card-line">
+              <select id="dash-materialSelect">
+                <option value="">Carregando…</option>
+              </select>
+            </div>
+            <div class="card-big"><span id="dash-materialSaldo">0</span></div>
+            <div class="card-sub">Saldo no intervalo selecionado</div>
           </div>
 
-          <button class="btn-apply" id="btn-aplicar">Aplicar</button>
-          <button class="btn-clear" id="btn-limpar">Limpar</button>
+          <div class="card-info critico">
+            <strong>Materiais Críticos (Top 5)</strong>
+            <div class="card-sub">Ordenado pelo pior déficit (Saldo − Mínimo)</div>
+            <ul class="crit-list" id="dash-criticosTop5"></ul>
+          </div>
         </div>
 
-        <div class="btn-group" id="modo-group">
-          <button class="pill active" data-modo="data">Por data</button>
-          <button class="pill" data-modo="material">Por material (Top 10)</button>
+        <!-- CONTROLES: Intervalo + modo -->
+        <div class="dash-controls">
+          <div class="date-range">
+            <div class="field">
+              <label for="filtro-de">De</label>
+              <input id="filtro-de" type="date">
+            </div>
+            <div class="field">
+              <label for="filtro-ate">Até</label>
+              <input id="filtro-ate" type="date">
+            </div>
+
+            <button class="btn-apply" id="btn-aplicar">Aplicar</button>
+            <button class="btn-clear" id="btn-limpar">Limpar</button>
+          </div>
+
+          <div class="btn-group" id="modo-group">
+            <button class="pill active" data-modo="data">Por data</button>
+            <button class="pill" data-modo="material">Por material (Top 10)</button>
+          </div>
+
+          <div class="muted" id="dash-info">Carregando…</div>
         </div>
 
-        <div class="muted" id="dash-info">Carregando…</div>
+        <div class="chart-wrap">
+          <canvas id="graficoCanvas" class="chart-canvas"></canvas>
+          <div class="muted" style="margin-top:8px;">
+            Dica: selecione um intervalo (De/Até) para filtrar cards, gráfico e tabelas.
+          </div>
+        </div>
+
+        <div class="section-title">Saldo por Material</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th style="text-align:right;">Saldo</th>
+              <th style="text-align:right;">Mínimo</th>
+              <th style="text-align:right;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-saldo-material"></tbody>
+        </table>
       </div>
-
-      <div class="chart-wrap">
-        <canvas id="graficoCanvas" class="chart-canvas"></canvas>
-        <div class="muted" style="margin-top:8px;">
-          Dica: selecione um intervalo (De/Até) para filtrar cards, gráfico e tabelas.
-        </div>
-      </div>
-
-      <div class="section-title">Saldo por Material</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Material</th>
-            <th style="text-align:right;">Saldo</th>
-            <th style="text-align:right;">Mínimo</th>
-            <th style="text-align:right;">Status</th>
-          </tr>
-        </thead>
-        <tbody id="tabela-saldo-material"></tbody>
-      </table>
     </div>
   </div>
 
