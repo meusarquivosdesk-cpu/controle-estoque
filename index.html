@@ -27,12 +27,39 @@
     table th, table td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
     table th { background: #f0f0f0; }
 
-    .cards-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 12px; }
+    /* DASH */
+    .cards-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px; }
     .card-info { color: #fff; padding: 15px; border-radius: 8px; }
     .total { background: #2e7d32; }
     .critico { background: #c62828; }
-    .uso { background: #1565c0; }
-    .disponivel { background: #388e3c; }
+
+    /* card conteúdo */
+    .card-line { display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .card-line select { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color:#fff; outline:none; }
+    .card-line select option { color:#000; background:#fff; }
+    .card-big { font-size: 22px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
+    .card-sub { font-size: 12px; opacity: .95; margin-top: 2px; }
+
+    .crit-list {
+      margin: 10px 0 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+    .crit-item {
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    .crit-left { display:flex; flex-direction: column; gap:2px; }
+    .crit-name { font-weight: 800; }
+    .crit-mini { font-size: 12px; opacity: .95; }
 
     /* controles do dashboard */
     .dash-controls {
@@ -55,27 +82,21 @@
     .pill.active { border-color:#2e7d32; box-shadow: 0 0 0 2px rgba(46,125,50,.12); }
     .muted { color:#666; font-size: 12px; }
 
-    /* ====== FIX DO GRÁFICO (evita "esticar sem parar") ====== */
+    /* gráfico */
     .chart-wrap {
       background: #eef2f3;
       border-radius: 8px;
       padding: 12px;
       margin-top: 10px;
-
-      /* dá um alvo fixo pro Chart.js */
       height: 360px;
       position: relative;
       overflow: hidden;
     }
     .chart-canvas {
-      /* NÃO usar padding no canvas */
       padding: 0 !important;
-
       background:#fff;
       border-radius: 8px;
       display:block;
-
-      /* ocupa 100% do container */
       width: 100% !important;
       height: 100% !important;
     }
@@ -173,26 +194,28 @@
   <div class="card dashboard">
     <h2>Saldo em Estoque</h2>
 
+    <!-- (REMOVIDOS) Itens em Uso / Disponíveis -->
     <div class="cards-dashboard">
+
+      <!-- Estoque por material (selecionável) -->
       <div class="card-info total">
-        <strong>Estoque Total</strong><br>
-        <span id="dash-estoqueTotal">0</span> Itens
+        <strong>Estoque (por Material)</strong>
+        <div class="card-line">
+          <select id="dash-materialSelect">
+            <option value="">Carregando…</option>
+          </select>
+        </div>
+        <div class="card-big"><span id="dash-materialSaldo">0</span></div>
+        <div class="card-sub">Saldo no período selecionado</div>
       </div>
 
+      <!-- Criticos Top 5 -->
       <div class="card-info critico">
-        <strong>Materiais Críticos</strong><br>
-        <span id="dash-criticos">0</span> Baixo Estoque
+        <strong>Materiais Críticos (Top 5)</strong>
+        <div class="card-sub">Ordenado pelo pior déficit (Saldo − Mínimo)</div>
+        <ul class="crit-list" id="dash-criticosTop5"></ul>
       </div>
 
-      <div class="card-info uso">
-        <strong>Itens em Uso</strong><br>
-        <span id="dash-itensEmUso">0</span> Em Campo
-      </div>
-
-      <div class="card-info disponivel">
-        <strong>Disponíveis</strong><br>
-        <span id="dash-disponiveis">0</span> Em Estoque
-      </div>
     </div>
 
     <!-- CONTROLES -->
@@ -407,6 +430,9 @@
   let modoAtual = "data";      // data, material
   let chart = null;
 
+  // dashboard selection
+  let dashMaterialSelecionado = "";
+
   function setActivePill(groupId, dataAttr, value) {
     const group = document.getElementById(groupId);
     [...group.querySelectorAll(".pill")].forEach(btn => {
@@ -449,31 +475,6 @@
     return saldo;
   }
 
-  function calcularCards(saldoMap, saidasPeriodo) {
-    let estoqueTotal = 0;
-    Object.keys(saldoMap).forEach(m => {
-      estoqueTotal += Math.max(0, Number(saldoMap[m] || 0));
-    });
-
-    // críticos: saldo <= mínimo (quando mínimo > 0)
-    let criticos = 0;
-    Object.keys(saldoMap).forEach(m => {
-      const min = Number(minimoMap[m] || 0);
-      if (min > 0 && Number(saldoMap[m] || 0) <= min) criticos++;
-    });
-
-    // itens em uso = soma das saídas (no período)
-    let itensEmUso = 0;
-    (saidasPeriodo || []).forEach(r => { itensEmUso += Math.max(0, Number(r["Qtd"] || 0)); });
-
-    const disponiveis = estoqueTotal;
-
-    setText("dash-estoqueTotal", estoqueTotal);
-    setText("dash-criticos", criticos);
-    setText("dash-itensEmUso", itensEmUso);
-    setText("dash-disponiveis", disponiveis);
-  }
-
   function groupByDateSum(rows) {
     const map = {}; // date -> sum qtd
     (rows || []).forEach(r => {
@@ -488,7 +489,6 @@
     const ent = groupByDateSum(entradasP);
     const sai = groupByDateSum(saidasP);
 
-    // pega todas as datas
     const datesSet = new Set([...Object.keys(ent), ...Object.keys(sai)]);
     const dates = [...datesSet].sort();
 
@@ -578,6 +578,54 @@
       `Top 10 por saldo | Período: ${periodoAtual === "all" ? "Tudo" : (periodoAtual + " dias")}`;
   }
 
+  function renderCriticosTop5(saldoMap) {
+    const ul = document.getElementById("dash-criticosTop5");
+    ul.innerHTML = "";
+
+    const items = Object.keys(minimoMap || {}).map(m => {
+      const saldo = Number(saldoMap[m] ?? 0);
+      const min = Number(minimoMap[m] ?? 0);
+      const deficit = (min > 0) ? (saldo - min) : 999999999; // mínimo 0 não entra como crítico
+      return { material: m, saldo, min, deficit };
+    })
+    .filter(x => x.min > 0) // só quem tem mínimo definido
+    .sort((a,b) => a.deficit - b.deficit) // mais negativo primeiro
+    .slice(0, 5);
+
+    if (items.length === 0) {
+      ul.innerHTML = `<li class="crit-item"><div class="crit-left"><div class="crit-name">Sem críticos</div><div class="crit-mini">Nenhum mínimo violado</div></div><div></div></li>`;
+      return;
+    }
+
+    items.forEach(x => {
+      const statusTxt = (x.saldo <= x.min) ? "BAIXO" : "OK";
+      const tr = document.createElement("li");
+      tr.className = "crit-item";
+      tr.innerHTML = `
+        <div class="crit-left">
+          <div class="crit-name">${x.material}</div>
+          <div class="crit-mini">Saldo: ${x.saldo} | Mín: ${x.min}</div>
+        </div>
+        <div style="font-weight:900;">${statusTxt}</div>
+      `;
+      ul.appendChild(tr);
+    });
+  }
+
+  function updateEstoquePorMaterial(saldoMap) {
+    const sel = document.getElementById("dash-materialSelect");
+    const material = (sel.value || "").trim();
+
+    dashMaterialSelecionado = material;
+
+    if (!material) {
+      setText("dash-materialSaldo", 0);
+      return;
+    }
+    const saldo = Number(saldoMap[material] || 0);
+    setText("dash-materialSaldo", saldo);
+  }
+
   async function recalcDashboard() {
     const entradasP = filtrarPorPeriodo(entradasAll);
     const saidasP = filtrarPorPeriodo(saidasAll);
@@ -585,11 +633,12 @@
     // saldo (no período)
     const saldoPeriodo = somarPorMaterial(entradasP, saidasP);
 
-    // cards (com saldo do período + uso do período)
-    calcularCards(saldoPeriodo, saidasP);
-
-    // tabela de saldo por material (no período)
+    // tabela (no período)
     renderSaldoPorMaterial(saldoPeriodo, minimoMap);
+
+    // cards
+    renderCriticosTop5(saldoPeriodo);
+    updateEstoquePorMaterial(saldoPeriodo);
 
     // gráfico
     if (modoAtual === "data") {
@@ -606,8 +655,17 @@
     materiaisList = await apiGet("materiais");
     minimoMap = {};
     (materiaisList || []).forEach(x => minimoMap[x.material] = Number(x.minimo || 0));
+
     fillSelect("entrada-material", materiaisList);
     fillSelect("saida-material", materiaisList);
+
+    // select do dashboard
+    fillSelect("dash-materialSelect", materiaisList);
+
+    // tenta manter seleção anterior
+    if (dashMaterialSelecionado) {
+      document.getElementById("dash-materialSelect").value = dashMaterialSelecionado;
+    }
   }
 
   async function carregarTabelas() {
@@ -664,7 +722,7 @@
     }
 
     try {
-      // valida saldo atual NO PERÍODO "all" (saldo real acumulado) para evitar saída maior que estoque
+      // valida saldo real acumulado
       const saldoReal = somarPorMaterial(entradasAll, saidasAll);
       const saldoAtual = Number(saldoReal[material] || 0);
 
@@ -699,7 +757,6 @@
     periodoAtual = btn.getAttribute("data-periodo");
     setActivePill("periodo-group", "data-periodo", periodoAtual);
 
-    // atualiza as tabelas visíveis também pelo período
     renderEntradas(filtrarPorPeriodo(entradasAll));
     renderSaidas(filtrarPorPeriodo(saidasAll));
     await recalcDashboard();
@@ -710,6 +767,11 @@
     if (!btn) return;
     modoAtual = btn.getAttribute("data-modo");
     setActivePill("modo-group", "data-modo", modoAtual);
+    await recalcDashboard();
+  });
+
+  // mudança do material no card "Estoque por Material"
+  document.getElementById("dash-materialSelect").addEventListener("change", async () => {
     await recalcDashboard();
   });
 
