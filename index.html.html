@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de Estoque</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
+    h2 { margin: 0 0 15px 0; }
+    .container { max-width: 1300px; margin: auto; }
+    .grid-top { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; }
+    .entrada { border-top: 6px solid #1e88e5; }
+    .saida { border-top: 6px solid #e53935; }
+    .dashboard { margin-top: 20px; border-top: 6px solid #2e7d32; }
+    .form-group { display: flex; gap: 10px; margin-bottom: 12px; }
+    .form-group input, .form-group select { flex: 1; padding: 8px; }
+    button { width: 100%; padding: 10px; border: none; border-radius: 5px; font-size: 15px; cursor: pointer; }
+    .btn-entrada { background: #1e88e5; color: #fff; }
+    .btn-saida { background: #e53935; color: #fff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    table th, table td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+    table th { background: #f0f0f0; }
+    .cards-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+    .card-info { color: #fff; padding: 15px; border-radius: 8px; }
+    .total { background: #2e7d32; }
+    .critico { background: #c62828; }
+    .uso { background: #1565c0; }
+    .disponivel { background: #388e3c; }
+    .grafico { height: 220px; background: #eef2f3; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 18px; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="grid-top">
+
+    <!-- ENTRADA -->
+    <div class="card entrada">
+      <h2>Entrada de Material</h2>
+
+      <div class="form-group">
+        <input id="entrada-data" type="date">
+        <input id="entrada-pedido" type="text" placeholder="N° Pedido">
+      </div>
+
+      <div class="form-group">
+        <select id="entrada-material">
+          <option value="">Carregando materiais...</option>
+        </select>
+        <input id="entrada-qtd" type="number" placeholder="Quantidade" min="0">
+      </div>
+
+      <div class="form-group">
+        <input id="entrada-fornecedor" type="text" placeholder="Fornecedor">
+      </div>
+
+      <button class="btn-entrada" id="btn-entrada">Registrar Entrada</button>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>N° Pedido</th>
+            <th>Material</th>
+            <th>Qtd</th>
+            <th>Fornecedor</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-entradas">
+          <!-- vamos preencher depois se você quiser -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SAÍDA (ainda sem integração) -->
+    <div class="card saida">
+      <h2>Saída de Material</h2>
+
+      <div class="form-group">
+        <input type="date">
+        <select>
+          <option>Selecione o Material</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <input type="number" placeholder="Quantidade">
+        <input type="text" placeholder="Destino">
+      </div>
+
+      <div class="form-group">
+        <input type="text" placeholder="Responsável">
+      </div>
+
+      <button class="btn-saida">Registrar Saída</button>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Material</th>
+            <th>Qtd</th>
+            <th>Destino</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- zerado -->
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="card dashboard">
+    <h2>Saldo em Estoque</h2>
+
+    <div class="cards-dashboard">
+      <div class="card-info total">
+        <strong>Estoque Total</strong><br>
+        <span id="dash-estoqueTotal">0</span> Itens
+      </div>
+
+      <div class="card-info critico">
+        <strong>Materiais Críticos</strong><br>
+        <span id="dash-criticos">0</span> Baixo Estoque
+      </div>
+
+      <div class="card-info uso">
+        <strong>Itens em Uso</strong><br>
+        <span id="dash-itensEmUso">0</span> Em Campo
+      </div>
+
+      <div class="card-info disponivel">
+        <strong>Disponíveis</strong><br>
+        <span id="dash-disponiveis">0</span> Em Estoque
+      </div>
+    </div>
+
+    <div class="grafico">
+      📊 Gráfico de Entradas x Saídas x Saldo
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbxnpeQ96BPuwo09qNnMdfqtme6OD513HKcXOTzXb66Gquln5cdyYVo6pk-5lEL_akFH/exec";
+
+  async function apiPost(payload) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  }
+
+  async function apiGet(action) {
+    const res = await fetch(`${API_URL}?action=${encodeURIComponent(action)}`);
+    return res.json();
+  }
+
+  function val(elId) {
+    return (document.getElementById(elId)?.value || "").trim();
+  }
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value ?? 0);
+  }
+
+  function fillSelectMateriais(materiais) {
+    const sel = document.getElementById("entrada-material");
+    sel.innerHTML = "";
+
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "Selecione o Material";
+    sel.appendChild(opt0);
+
+    if (!materiais || materiais.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Nenhum material cadastrado";
+      sel.appendChild(opt);
+      return;
+    }
+
+    materiais.forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item.material;
+      opt.textContent = item.material;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function carregarMateriais() {
+    try {
+      const lista = await apiGet("materiais");
+      fillSelectMateriais(lista);
+    } catch (err) {
+      const sel = document.getElementById("entrada-material");
+      sel.innerHTML = `<option value="">Erro ao carregar materiais</option>`;
+      console.error(err);
+    }
+  }
+
+  async function atualizarDashboard() {
+    try {
+      const dash = await apiGet("dashboard");
+      setText("dash-estoqueTotal", dash.estoqueTotal ?? 0);
+      setText("dash-criticos", dash.criticos ?? 0);
+      setText("dash-itensEmUso", dash.itensEmUso ?? 0);
+      setText("dash-disponiveis", dash.disponiveis ?? 0);
+    } catch (err) {
+      console.error("Erro ao atualizar dashboard:", err);
+    }
+  }
+
+  document.getElementById("btn-entrada").addEventListener("click", async () => {
+    const data = val("entrada-data");
+    const pedido = val("entrada-pedido");
+    const material = val("entrada-material");
+    const qtd = val("entrada-qtd");
+    const fornecedor = val("entrada-fornecedor");
+
+    if (!data || !material || !qtd) {
+      alert("Preencha pelo menos: Data, Material e Quantidade.");
+      return;
+    }
+
+    try {
+      const resp = await apiPost({
+        action: "addEntrada",
+        data,
+        pedido,
+        material,
+        qtd,
+        fornecedor
+      });
+
+      if (!resp || resp.ok !== true) {
+        alert("Erro ao registrar entrada: " + (resp && resp.error ? resp.error : "sem detalhe"));
+        return;
+      }
+
+      alert("Entrada registrada com sucesso!");
+
+      document.getElementById("entrada-pedido").value = "";
+      document.getElementById("entrada-material").value = "";
+      document.getElementById("entrada-qtd").value = "";
+      document.getElementById("entrada-fornecedor").value = "";
+
+      // Atualiza os números do dashboard imediatamente
+      await atualizarDashboard();
+
+    } catch (err) {
+      alert("Falha na comunicação com a API: " + err);
+    }
+  });
+
+  // Inicialização
+  (async () => {
+    await carregarMateriais();
+    await atualizarDashboard();
+  })();
+</script>
+
+</body>
+</html>
