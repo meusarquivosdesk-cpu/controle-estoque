@@ -28,9 +28,14 @@
     .critico { background: #c62828; }
     .uso { background: #1565c0; }
     .disponivel { background: #388e3c; }
-    .grafico { height: 220px; background: #eef2f3; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 18px; }
 
-    /* extra: tabela do saldo por material */
+    /* gráfico real */
+    .grafico-wrap { background:#eef2f3; border-radius: 8px; padding: 14px; }
+    .grafico-top { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap: wrap; margin-bottom: 10px; }
+    .grafico-top .left { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+    .pill { background:#fff; border:1px solid #ddd; border-radius: 999px; padding: 6px 10px; font-size: 12px; color:#333; }
+    .small { font-size:12px; color:#666; }
+    canvas { width: 100%; height: 260px; display:block; background:#fff; border-radius: 8px; border: 1px solid #e1e1e1; }
     h3 { margin: 10px 0; }
   </style>
 </head>
@@ -139,11 +144,23 @@
       </div>
     </div>
 
-    <div class="grafico">
-      📊 Gráfico de Entradas x Saídas x Saldo
+    <!-- GRÁFICO REAL -->
+    <div class="grafico-wrap">
+      <div class="grafico-top">
+        <div class="left">
+          <span class="pill">📈 Entradas</span>
+          <span class="pill">📉 Saídas</span>
+          <span class="pill">🧮 Saldo acumulado</span>
+        </div>
+        <div class="small" id="grafico-info">Carregando gráfico...</div>
+      </div>
+      <canvas id="graficoCanvas" width="1100" height="260"></canvas>
+      <div class="small" style="margin-top:8px;">
+        Dica: o gráfico agrupa por <b>data</b>. Se quiser por <b>material</b>, eu monto a visão também.
+      </div>
     </div>
 
-    <!-- NOVO: Saldo por Material -->
+    <!-- Saldo por Material -->
     <div style="margin-top:15px;">
       <h3>Saldo por Material</h3>
       <table>
@@ -168,7 +185,7 @@
     return res.json();
   }
 
-  // POST em x-www-form-urlencoded (evita preflight/CORS chato)
+  // POST em x-www-form-urlencoded (evita preflight/CORS)
   async function apiPost(payload) {
     const body = new URLSearchParams();
     body.set("payload", JSON.stringify(payload));
@@ -281,18 +298,17 @@
   async function carregarEntradas() {
     const rows = await apiGet("entradas");
     renderEntradas(rows);
+    return rows || [];
   }
 
   async function carregarSaidas() {
     const rows = await apiGet("saidas");
     renderSaidas(rows);
+    return rows || [];
   }
 
-  // NOVO: render de saldo por material
   function renderSaldos(saldoPorMaterial) {
     const tbody = document.getElementById("tabela-saldos");
-    if (!tbody) return;
-
     tbody.innerHTML = "";
 
     const entries = Object.entries(saldoPorMaterial || {});
@@ -319,6 +335,217 @@
     setText("dash-itensEmUso", lastDashboard.itensEmUso ?? 0);
     setText("dash-disponiveis", lastDashboard.disponiveis ?? 0);
     renderSaldos(lastDashboard.saldoPorMaterial);
+    return lastDashboard;
+  }
+
+  // =========================
+  // GRÁFICO (CANVAS) - SEM LIB
+  // =========================
+  function toISODate(d) {
+    const s = String(d || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    // se vier "dd/mm/aaaa"
+    const br = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+    return "";
+  }
+
+  function sumByDate(rows, colQtd) {
+    const map = {};
+    (rows || []).forEach(r => {
+      const iso = toISODate(r["Data"]);
+      if (!iso) return;
+      const q = Number(r[colQtd] || 0);
+      map[iso] = (map[iso] || 0) + q;
+    });
+    return map;
+  }
+
+  function listDatesUnion(m1, m2) {
+    const set = new Set([...Object.keys(m1||{}), ...Object.keys(m2||{})]);
+    return Array.from(set).sort((a,b) => a.localeCompare(b));
+  }
+
+  function drawChart(dates, entradasMap, saidasMap) {
+    const canvas = document.getElementById("graficoCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // resize pra ficar bonito no display
+    const cssWidth = canvas.clientWidth || 1100;
+    const cssHeight = 260;
+    canvas.width = Math.floor(cssWidth * (window.devicePixelRatio || 1));
+    canvas.height = Math.floor(cssHeight * (window.devicePixelRatio || 1));
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+
+    const W = cssWidth;
+    const H = cssHeight;
+
+    // área do plot
+    const padL = 46, padR = 16, padT = 12, padB = 34;
+    const PW = W - padL - padR;
+    const PH = H - padT - padB;
+
+    // dados
+    const entradas = dates.map(d => Number(entradasMap[d] || 0));
+    const saidas = dates.map(d => Number(saidasMap[d] || 0));
+
+    // saldo acumulado (entradas - saidas)
+    let acc = 0;
+    const saldo = dates.map((d, i) => {
+      acc += entradas[i] - saidas[i];
+      return acc;
+    });
+
+    const maxBar = Math.max(1, ...entradas, ...saidas);
+    const maxLine = Math.max(1, ...saldo);
+    const maxY = Math.max(maxBar, maxLine);
+
+    // fundo
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,W,H);
+
+    // grid + eixos
+    ctx.strokeStyle = "#e6e6e6";
+    ctx.lineWidth = 1;
+
+    const gridLines = 4;
+    for (let i=0;i<=gridLines;i++){
+      const y = padT + (PH * i / gridLines);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL+PW, y);
+      ctx.stroke();
+    }
+
+    // labels Y
+    ctx.fillStyle = "#666";
+    ctx.font = "12px Arial";
+    for (let i=0;i<=gridLines;i++){
+      const val = Math.round(maxY * (gridLines - i) / gridLines);
+      const y = padT + (PH * i / gridLines);
+      ctx.fillText(String(val), 6, y+4);
+    }
+
+    // barras
+    const n = Math.max(1, dates.length);
+    const groupW = PW / n;
+    const barW = Math.max(6, Math.min(18, groupW * 0.25));
+    const gap = Math.max(4, Math.min(12, groupW * 0.12));
+
+    function yFrom(v){
+      return padT + PH - (v / maxY) * PH;
+    }
+
+    // cores (fixas só pro gráfico)
+    const colEntrada = "#1e88e5";
+    const colSaida = "#e53935";
+    const colSaldo = "#2e7d32";
+
+    for (let i=0;i<n;i++){
+      const x0 = padL + i*groupW + (groupW - (2*barW + gap))/2;
+
+      // entrada
+      const e = entradas[i];
+      const yE = yFrom(e);
+      ctx.fillStyle = colEntrada;
+      ctx.fillRect(x0, yE, barW, padT+PH - yE);
+
+      // saída
+      const s = saidas[i];
+      const yS = yFrom(s);
+      ctx.fillStyle = colSaida;
+      ctx.fillRect(x0 + barW + gap, yS, barW, padT+PH - yS);
+    }
+
+    // linha saldo
+    ctx.strokeStyle = colSaldo;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i=0;i<n;i++){
+      const xMid = padL + i*groupW + groupW/2;
+      const y = yFrom(saldo[i]);
+      if (i===0) ctx.moveTo(xMid, y);
+      else ctx.lineTo(xMid, y);
+    }
+    ctx.stroke();
+
+    // pontos
+    ctx.fillStyle = colSaldo;
+    for (let i=0;i<n;i++){
+      const xMid = padL + i*groupW + groupW/2;
+      const y = yFrom(saldo[i]);
+      ctx.beginPath();
+      ctx.arc(xMid, y, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // eixo X labels (pega poucos pra não embolar)
+    ctx.fillStyle = "#666";
+    ctx.font = "12px Arial";
+    const step = n <= 8 ? 1 : Math.ceil(n / 8);
+    for (let i=0;i<n;i+=step){
+      const d = dates[i];
+      const label = fmtDateBR(d);
+      const xMid = padL + i*groupW + groupW/2;
+      ctx.save();
+      ctx.translate(xMid, padT + PH + 20);
+      ctx.rotate(-0.35);
+      ctx.textAlign = "right";
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    }
+
+    // borda do plot
+    ctx.strokeStyle = "#dddddd";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padL, padT, PW, PH);
+  }
+
+  async function atualizarGrafico() {
+    const info = document.getElementById("grafico-info");
+    info.textContent = "Carregando dados...";
+
+    const entradasRows = await apiGet("entradas");
+    const saidasRows = await apiGet("saidas");
+
+    const emap = sumByDate(entradasRows, "Qtd");
+    const smap = sumByDate(saidasRows, "Qtd");
+    const dates = listDatesUnion(emap, smap);
+
+    if (dates.length === 0) {
+      info.textContent = "Sem dados para gráfico ainda (registre entradas/saídas).";
+      drawChart(["2026-01-01"], {"2026-01-01":0}, {"2026-01-01":0});
+      return;
+    }
+
+    info.textContent = `Mostrando ${dates.length} dia(s)`;
+    drawChart(dates, emap, smap);
+  }
+
+  window.addEventListener("resize", () => {
+    // redesenha com último estado
+    if (window.__lastDates && window.__lastEmap && window.__lastSmap) {
+      drawChart(window.__lastDates, window.__lastEmap, window.__lastSmap);
+    }
+  });
+
+  // hook pra resize
+  async function atualizarGraficoComCache() {
+    const entradasRows = await apiGet("entradas");
+    const saidasRows = await apiGet("saidas");
+    const emap = sumByDate(entradasRows, "Qtd");
+    const smap = sumByDate(saidasRows, "Qtd");
+    const dates = listDatesUnion(emap, smap);
+
+    window.__lastDates = dates.length ? dates : ["2026-01-01"];
+    window.__lastEmap = dates.length ? emap : {"2026-01-01":0};
+    window.__lastSmap = dates.length ? smap : {"2026-01-01":0};
+
+    const info = document.getElementById("grafico-info");
+    info.textContent = dates.length ? `Mostrando ${dates.length} dia(s)` : "Sem dados para gráfico ainda";
+    drawChart(window.__lastDates, window.__lastEmap, window.__lastSmap);
   }
 
   // --- Entrada ---
@@ -350,6 +577,7 @@
 
       await atualizarDashboard();
       await carregarEntradas();
+      await atualizarGraficoComCache();
     } catch (err) {
       console.error(err);
       alert("Falha na comunicação com a API.");
@@ -395,6 +623,7 @@
 
       await atualizarDashboard();
       await carregarSaidas();
+      await atualizarGraficoComCache();
     } catch (err) {
       console.error(err);
       alert("Falha na comunicação com a API.");
@@ -408,6 +637,7 @@
       await atualizarDashboard();
       await carregarEntradas();
       await carregarSaidas();
+      await atualizarGraficoComCache();
     } catch (err) {
       console.error(err);
       alert("Erro ao iniciar: verifique permissões da API e recarregue (Ctrl+F5).");
