@@ -41,6 +41,8 @@
       box-shadow: var(--shadow);
       border: 1px solid var(--border);
       padding: 20px;
+      width: 100%;
+      max-width: 100%;
     }
 
     .page-title{
@@ -81,11 +83,16 @@
       pointer-events: none;
     }
 
-    /* ✅ AGORA É UM BLOCO ÚNICO (um abaixo do outro) */
+    /* ✅ FORÇAR UM ABAIXO DO OUTRO (independente de qualquer CSS externo do GitHub/tema) */
     .stack-top{
-      display:grid;
-      grid-template-columns: 1fr;
+      display: flex !important;
+      flex-direction: column !important;
       gap: 20px;
+      width: 100%;
+    }
+    .stack-top > .card{
+      width: 100% !important;
+      max-width: 100% !important;
     }
 
     .entrada{ border-top: 6px solid var(--brand-gold); }
@@ -343,7 +350,7 @@
   <div class="container">
     <div class="page-title">Controle de Estoque</div>
 
-    <!-- ✅ AGORA: 3 BLOCOS UM ABAIXO DO OUTRO -->
+    <!-- ✅ 3 BLOCOS UM ABAIXO DO OUTRO -->
     <div class="stack-top">
       <div class="card entrada">
         <h2>Entrada de Material</h2>
