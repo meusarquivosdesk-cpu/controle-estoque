@@ -6,105 +6,296 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    * { box-sizing: border-box; }
+    :root{
+      --brand-red: #8B0C17;
+      --brand-red-dark: #650811;
+      --brand-gold: #E1B11A;
 
-    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
-    h2 { margin: 0 0 15px 0; }
-    .container { max-width: 1300px; margin: auto; }
-    .grid-top { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; }
-    .entrada { border-top: 6px solid #1e88e5; }
-    .saida { border-top: 6px solid #e53935; }
-    .dashboard { margin-top: 20px; border-top: 6px solid #2e7d32; }
+      --bg: #F3F3F3;
+      --paper: #FFFFFF;
+      --text: #111;
+      --muted: #6B6B6B;
 
-    .form-group { display: flex; gap: 10px; margin-bottom: 12px; }
-    .form-group input, .form-group select { flex: 1; padding: 8px; }
-    button { width: 100%; padding: 10px; border: none; border-radius: 5px; font-size: 15px; cursor: pointer; }
-    .btn-entrada { background: #1e88e5; color: #fff; }
-    .btn-saida { background: #e53935; color: #fff; }
+      --border: #D6B459;
+      --shadow: 0 6px 18px rgba(0,0,0,.08);
+    }
 
+    *{ box-sizing:border-box; }
+
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 24px;
+      color: var(--text);
+      line-height: 1.6;
+      background:
+        radial-gradient(1200px 400px at 40% -50px, rgba(225,177,26,.18), transparent 60%),
+        radial-gradient(900px 350px at 90% 0px, rgba(139,12,23,.12), transparent 55%),
+        var(--bg);
+    }
+
+    .container{
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .card{
+      background: var(--paper);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 20px;
+    }
+
+    /* cabeçalho estilo do checklist */
+    .page-title{
+      margin: 0 0 18px 0;
+      font-size: 20px;
+      letter-spacing: .2px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand-red-dark), var(--brand-red));
+      padding: 18px 16px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      border: 1px solid rgba(214,180,89,.75);
+    }
+    .page-title::before{
+      content:"";
+      position:absolute;
+      left:-90px; top:-120px;
+      width: 240px; height: 240px;
+      background: radial-gradient(circle at 70% 70%, rgba(225,177,26,.95), rgba(225,177,26,.65));
+      transform: rotate(18deg);
+      border-radius: 36px;
+      filter: saturate(1.05);
+      pointer-events: none;
+    }
+    .page-title::after{
+      content:"";
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width: 10px;
+      background: var(--brand-gold);
+      pointer-events: none;
+    }
+
+    .grid-top{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .entrada{ border-top: 6px solid var(--brand-gold); }
+    .saida{ border-top: 6px solid var(--brand-red); }
+    .dashboard{ margin-top: 20px; border-top: 6px solid var(--brand-red-dark); }
+
+    h2{
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--brand-red);
+    }
+
+    /* inputs */
+    .form-group { display:flex; gap: 10px; margin-bottom: 12px; }
+    .form-group input, .form-group select{
+      flex:1;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 14px;
+      transition: box-shadow .15s ease, border-color .15s ease;
+    }
+    .form-group input:focus, .form-group select:focus{
+      outline:none;
+      border-color: var(--brand-red);
+      box-shadow: 0 0 0 3px rgba(139,12,23,.18);
+    }
+
+    /* botões */
+    button{
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .btn-entrada{
+      background: linear-gradient(135deg, rgba(225,177,26,.95), rgba(225,177,26,.75));
+      color: #222;
+      font-weight: 900;
+    }
+    .btn-saida{
+      background: linear-gradient(135deg, var(--brand-red-dark), var(--brand-red));
+      color: #fff;
+      font-weight: 900;
+    }
+    button:hover{ filter: brightness(1.04); }
+
+    /* tabela */
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    table th, table td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
-    table th { background: #f0f0f0; }
+    table th, table td { border-bottom: 1px solid rgba(214,180,89,.55); padding: 10px 8px; text-align: left; }
+    table th {
+      background: linear-gradient(180deg, rgba(225,177,26,.14), rgba(225,177,26,.06));
+      color: var(--brand-red);
+      font-weight: 900;
+      border-bottom: 1px solid rgba(214,180,89,.75);
+    }
 
-    /* DASH */
-    .cards-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px; }
-    .card-info { color: #fff; padding: 15px; border-radius: 8px; }
-    .total { background: #2e7d32; }
-    .critico { background: #c62828; }
+    /* DASH CARDS */
+    .cards-dashboard{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 12px;
+    }
+    .card-info{
+      border-radius: 14px;
+      padding: 16px;
+      color:#fff;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(214,180,89,.65);
+      position: relative;
+      overflow:hidden;
+    }
+    .card-info::after{
+      content:"";
+      position:absolute;
+      right:-40px; top:-40px;
+      width: 140px; height: 140px;
+      background: radial-gradient(circle at 30% 30%, rgba(225,177,26,.45), transparent 60%);
+      transform: rotate(15deg);
+      pointer-events:none;
+    }
+    .total{
+      background: linear-gradient(135deg, rgba(101,8,17,.96), rgba(139,12,23,.92));
+    }
+    .critico{
+      background: linear-gradient(135deg, rgba(139,12,23,.92), rgba(101,8,17,.96));
+    }
 
-    /* card conteúdo */
-    .card-line { display:flex; gap:10px; align-items:center; margin-top:10px; }
-    .card-line select { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color:#fff; outline:none; }
-    .card-line select option { color:#000; background:#fff; }
-    .card-big { font-size: 22px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
-    .card-sub { font-size: 12px; opacity: .95; margin-top: 2px; }
+    .card-line{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .card-line select{
+      flex:1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(214,180,89,.85);
+      background: rgba(255,255,255,.10);
+      color:#fff;
+      outline:none;
+    }
+    .card-line select option{ color:#000; background:#fff; }
 
-    .crit-list {
+    .card-big{ font-size: 24px; font-weight: 900; line-height: 1.1; margin-top: 8px; }
+    .card-sub{ font-size: 12px; opacity: .95; margin-top: 4px; }
+
+    /* lista críticos */
+    .crit-list{
       margin: 10px 0 0 0;
       padding: 0;
       list-style: none;
       display: grid;
-      gap: 6px;
+      gap: 8px;
     }
-    .crit-item {
+    .crit-item{
       display:flex;
       justify-content: space-between;
       gap: 10px;
-      background: rgba(255,255,255,.14);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 8px;
-      padding: 8px 10px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(214,180,89,.55);
+      border-radius: 12px;
+      padding: 10px 12px;
       font-size: 13px;
     }
-    .crit-left { display:flex; flex-direction: column; gap:2px; }
-    .crit-name { font-weight: 800; }
-    .crit-mini { font-size: 12px; opacity: .95; }
+    .crit-left{ display:flex; flex-direction: column; gap:2px; }
+    .crit-name{ font-weight: 900; }
+    .crit-mini{ font-size: 12px; opacity: .95; }
 
-    /* controles do dashboard */
-    .dash-controls {
+    /* CONTROLES */
+    .dash-controls{
       display:flex;
       align-items:center;
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
-      margin: 6px 0 10px 0;
+      margin: 10px 0 12px 0;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(214,180,89,.75);
+      background: linear-gradient(180deg, rgba(225,177,26,.10), rgba(225,177,26,.04));
     }
-    .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
-    .pill {
-      border: 1px solid #d6dbe1;
+    .btn-group{ display:flex; gap:8px; flex-wrap:wrap; }
+
+    .pill{
+      border: 1px solid rgba(214,180,89,.95);
       background: #fff;
-      padding: 6px 10px;
+      padding: 8px 12px;
       border-radius: 999px;
       cursor:pointer;
       font-size: 13px;
+      font-weight: 900;
+      color: var(--brand-red);
+      box-shadow: 0 2px 10px rgba(0,0,0,.05);
     }
-    .pill.active { border-color:#2e7d32; box-shadow: 0 0 0 2px rgba(46,125,50,.12); }
-    .muted { color:#666; font-size: 12px; }
+    .pill.active{
+      color:#fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--brand-red-dark), var(--brand-red));
+      box-shadow: 0 0 0 3px rgba(139,12,23,.14);
+    }
 
-    /* gráfico */
-    .chart-wrap {
-      background: #eef2f3;
-      border-radius: 8px;
+    .muted{ color: var(--muted); font-size: 12px; }
+
+    /* GRÁFICO (fix resize loop) */
+    .chart-wrap{
+      background: linear-gradient(180deg, rgba(225,177,26,.10), rgba(225,177,26,.03));
+      border-radius: 14px;
       padding: 12px;
       margin-top: 10px;
-      height: 360px;
+      height: 380px;
       position: relative;
       overflow: hidden;
+      border: 1px solid rgba(214,180,89,.75);
+      box-shadow: var(--shadow);
     }
-    .chart-canvas {
+    .chart-canvas{
       padding: 0 !important;
       background:#fff;
-      border-radius: 8px;
+      border-radius: 12px;
       display:block;
       width: 100% !important;
       height: 100% !important;
+      border: 1px solid rgba(214,180,89,.55);
     }
 
-    .section-title {
-      margin: 16px 0 8px 0;
-      font-size: 16px;
-      font-weight: 700;
+    .section-title{
+      background: linear-gradient(180deg, rgba(225,177,26,.14), rgba(225,177,26,.06));
+      color: var(--brand-red);
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-top: 20px;
+      font-weight: 900;
+      border: 1px solid rgba(214,180,89,.75);
+    }
+
+    @media (max-width: 980px){
+      .grid-top{ grid-template-columns: 1fr; }
+      .cards-dashboard{ grid-template-columns: 1fr; }
+    }
+
+    @media print{
+      body{ background:#fff; }
+      .card{ box-shadow:none; }
+      .page-title{ box-shadow:none; }
     }
   </style>
 
@@ -113,153 +304,148 @@
 </head>
 
 <body>
-<div class="container">
+  <div class="container">
+    <div class="page-title">Controle de Estoque</div>
 
-  <div class="grid-top">
+    <div class="grid-top">
 
-    <!-- ENTRADA -->
-    <div class="card entrada">
-      <h2>Entrada de Material</h2>
+      <!-- ENTRADA -->
+      <div class="card entrada">
+        <h2>Entrada de Material</h2>
 
-      <div class="form-group">
-        <input id="entrada-data" type="date">
-        <input id="entrada-pedido" type="text" placeholder="N° Pedido">
+        <div class="form-group">
+          <input id="entrada-data" type="date">
+          <input id="entrada-pedido" type="text" placeholder="N° Pedido">
+        </div>
+
+        <div class="form-group">
+          <select id="entrada-material">
+            <option value="">Carregando materiais...</option>
+          </select>
+          <input id="entrada-qtd" type="number" placeholder="Quantidade" min="0">
+        </div>
+
+        <div class="form-group">
+          <input id="entrada-fornecedor" type="text" placeholder="Fornecedor">
+        </div>
+
+        <button class="btn-entrada" id="btn-entrada">Registrar Entrada</button>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>N° Pedido</th>
+              <th>Material</th>
+              <th>Qtd</th>
+              <th>Fornecedor</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-entradas"></tbody>
+        </table>
       </div>
 
-      <div class="form-group">
-        <select id="entrada-material">
-          <option value="">Carregando materiais...</option>
-        </select>
-        <input id="entrada-qtd" type="number" placeholder="Quantidade" min="0">
-      </div>
+      <!-- SAÍDA -->
+      <div class="card saida">
+        <h2>Saída de Material</h2>
 
-      <div class="form-group">
-        <input id="entrada-fornecedor" type="text" placeholder="Fornecedor">
-      </div>
-
-      <button class="btn-entrada" id="btn-entrada">Registrar Entrada</button>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>N° Pedido</th>
-            <th>Material</th>
-            <th>Qtd</th>
-            <th>Fornecedor</th>
-          </tr>
-        </thead>
-        <tbody id="tabela-entradas"></tbody>
-      </table>
-    </div>
-
-    <!-- SAÍDA -->
-    <div class="card saida">
-      <h2>Saída de Material</h2>
-
-      <div class="form-group">
-        <input id="saida-data" type="date">
-        <select id="saida-material">
-          <option value="">Carregando materiais...</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <input id="saida-qtd" type="number" placeholder="Quantidade" min="0">
-        <input id="saida-destino" type="text" placeholder="Destino">
-      </div>
-
-      <div class="form-group">
-        <input id="saida-responsavel" type="text" placeholder="Responsável">
-      </div>
-
-      <button class="btn-saida" id="btn-saida">Registrar Saída</button>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Material</th>
-            <th>Qtd</th>
-            <th>Destino</th>
-          </tr>
-        </thead>
-        <tbody id="tabela-saidas"></tbody>
-      </table>
-    </div>
-
-  </div>
-
-  <!-- DASHBOARD -->
-  <div class="card dashboard">
-    <h2>Saldo em Estoque</h2>
-
-    <!-- (REMOVIDOS) Itens em Uso / Disponíveis -->
-    <div class="cards-dashboard">
-
-      <!-- Estoque por material (selecionável) -->
-      <div class="card-info total">
-        <strong>Estoque (por Material)</strong>
-        <div class="card-line">
-          <select id="dash-materialSelect">
-            <option value="">Carregando…</option>
+        <div class="form-group">
+          <input id="saida-data" type="date">
+          <select id="saida-material">
+            <option value="">Carregando materiais...</option>
           </select>
         </div>
-        <div class="card-big"><span id="dash-materialSaldo">0</span></div>
-        <div class="card-sub">Saldo no período selecionado</div>
-      </div>
 
-      <!-- Criticos Top 5 -->
-      <div class="card-info critico">
-        <strong>Materiais Críticos (Top 5)</strong>
-        <div class="card-sub">Ordenado pelo pior déficit (Saldo − Mínimo)</div>
-        <ul class="crit-list" id="dash-criticosTop5"></ul>
+        <div class="form-group">
+          <input id="saida-qtd" type="number" placeholder="Quantidade" min="0">
+          <input id="saida-destino" type="text" placeholder="Destino">
+        </div>
+
+        <div class="form-group">
+          <input id="saida-responsavel" type="text" placeholder="Responsável">
+        </div>
+
+        <button class="btn-saida" id="btn-saida">Registrar Saída</button>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Material</th>
+              <th>Qtd</th>
+              <th>Destino</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-saidas"></tbody>
+        </table>
       </div>
 
     </div>
 
-    <!-- CONTROLES -->
-    <div class="dash-controls">
-      <div class="btn-group" id="periodo-group">
-        <button class="pill active" data-periodo="7">7 dias</button>
-        <button class="pill" data-periodo="30">30 dias</button>
-        <button class="pill" data-periodo="90">90 dias</button>
-        <button class="pill" data-periodo="all">Tudo</button>
+    <!-- DASHBOARD -->
+    <div class="card dashboard">
+      <h2>Saldo em Estoque</h2>
+
+      <div class="cards-dashboard">
+        <!-- Estoque por material -->
+        <div class="card-info total">
+          <strong>Estoque (por Material)</strong>
+          <div class="card-line">
+            <select id="dash-materialSelect">
+              <option value="">Carregando…</option>
+            </select>
+          </div>
+          <div class="card-big"><span id="dash-materialSaldo">0</span></div>
+          <div class="card-sub">Saldo no período selecionado</div>
+        </div>
+
+        <!-- Críticos Top 5 -->
+        <div class="card-info critico">
+          <strong>Materiais Críticos (Top 5)</strong>
+          <div class="card-sub">Ordenado pelo pior déficit (Saldo − Mínimo)</div>
+          <ul class="crit-list" id="dash-criticosTop5"></ul>
+        </div>
       </div>
 
-      <div class="btn-group" id="modo-group">
-        <button class="pill active" data-modo="data">Por data</button>
-        <button class="pill" data-modo="material">Por material (Top 10)</button>
+      <!-- CONTROLES -->
+      <div class="dash-controls">
+        <div class="btn-group" id="periodo-group">
+          <button class="pill active" data-periodo="7">7 dias</button>
+          <button class="pill" data-periodo="30">30 dias</button>
+          <button class="pill" data-periodo="90">90 dias</button>
+          <button class="pill" data-periodo="all">Tudo</button>
+        </div>
+
+        <div class="btn-group" id="modo-group">
+          <button class="pill active" data-modo="data">Por data</button>
+          <button class="pill" data-modo="material">Por material (Top 10)</button>
+        </div>
+
+        <div class="muted" id="dash-info">Carregando…</div>
       </div>
 
-      <div class="muted" id="dash-info">Carregando…</div>
+      <!-- GRÁFICO -->
+      <div class="chart-wrap">
+        <canvas id="graficoCanvas" class="chart-canvas"></canvas>
+        <div class="muted" style="margin-top:8px;">
+          Dica: o filtro de período afeta cards, gráfico e tabela. O gráfico “Por data” agrupa por dia.
+        </div>
+      </div>
+
+      <div class="section-title">Saldo por Material</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th style="text-align:right;">Saldo</th>
+            <th style="text-align:right;">Mínimo</th>
+            <th style="text-align:right;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-saldo-material"></tbody>
+      </table>
     </div>
-
-    <!-- GRÁFICO -->
-    <div class="chart-wrap">
-      <canvas id="graficoCanvas" class="chart-canvas"></canvas>
-      <div class="muted" style="margin-top:8px;">
-        Dica: o filtro de período afeta cards, gráfico e tabela. O gráfico “Por data” agrupa por dia.
-      </div>
-    </div>
-
-    <!-- SALDO POR MATERIAL -->
-    <div class="section-title">Saldo por Material</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Material</th>
-          <th style="text-align:right;">Saldo</th>
-          <th style="text-align:right;">Mínimo</th>
-          <th style="text-align:right;">Status</th>
-        </tr>
-      </thead>
-      <tbody id="tabela-saldo-material"></tbody>
-    </table>
-
   </div>
-
-</div>
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbxnpeQ96BPuwo09qNnMdfqtme6OD513HKcXOTzXb66Gquln5cdyYVo6pk-5lEL_akFH/exec";
@@ -346,7 +532,7 @@
     tbody.innerHTML = "";
 
     if (!rows || rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="color:#777;">Sem entradas registradas</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">Sem entradas registradas</td></tr>`;
       return;
     }
 
@@ -369,7 +555,7 @@
     tbody.innerHTML = "";
 
     if (!rows || rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="color:#777;">Sem saídas registradas</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">Sem saídas registradas</td></tr>`;
       return;
     }
 
@@ -399,22 +585,21 @@
     items.sort((a,b) => b.saldo - a.saldo);
 
     if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="color:#777;">Sem dados de saldo</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">Sem dados de saldo</td></tr>`;
       return;
     }
 
     items.forEach(it => {
       const ok = (it.minimo > 0) ? (it.saldo > it.minimo) : true;
-      const status = (it.minimo > 0)
-        ? (ok ? "OK" : "BAIXO")
-        : "—";
+      const status = (it.minimo > 0) ? (ok ? "OK" : "BAIXO") : "—";
+      const statusColor = status === "BAIXO" ? "var(--brand-red)" : "#1f6f2a";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${it.material}</td>
         <td style="text-align:right;">${it.saldo}</td>
         <td style="text-align:right;">${it.minimo || 0}</td>
-        <td style="text-align:right; font-weight:700; color:${status==="BAIXO" ? "#c62828" : "#2e7d32"};">${status}</td>
+        <td style="text-align:right; font-weight:900; color:${statusColor};">${status}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -444,7 +629,6 @@
     if (periodoAtual === "all") return null;
     const n = Number(periodoAtual);
     if (!n || n <= 0) return null;
-    // inclui o dia de hoje: n dias = (n-1) dias atrás até hoje
     return daysAgoTs(n - 1);
   }
 
@@ -476,7 +660,7 @@
   }
 
   function groupByDateSum(rows) {
-    const map = {}; // date -> sum qtd
+    const map = {};
     (rows || []).forEach(r => {
       const d = toISODateOnly(r["Data"]);
       if (!d) return;
@@ -518,10 +702,7 @@
     .sort((a,b) => b.saldo - a.saldo)
     .slice(0, 10);
 
-    return {
-      labels: items.map(x => x.material),
-      values: items.map(x => x.saldo)
-    };
+    return { labels: items.map(x => x.material), values: items.map(x => x.saldo) };
   }
 
   function destroyChart() {
@@ -585,43 +766,46 @@
     const items = Object.keys(minimoMap || {}).map(m => {
       const saldo = Number(saldoMap[m] ?? 0);
       const min = Number(minimoMap[m] ?? 0);
-      const deficit = (min > 0) ? (saldo - min) : 999999999; // mínimo 0 não entra como crítico
+      const deficit = (min > 0) ? (saldo - min) : 999999999;
       return { material: m, saldo, min, deficit };
     })
-    .filter(x => x.min > 0) // só quem tem mínimo definido
-    .sort((a,b) => a.deficit - b.deficit) // mais negativo primeiro
+    .filter(x => x.min > 0)
+    .sort((a,b) => a.deficit - b.deficit)
     .slice(0, 5);
 
     if (items.length === 0) {
-      ul.innerHTML = `<li class="crit-item"><div class="crit-left"><div class="crit-name">Sem críticos</div><div class="crit-mini">Nenhum mínimo violado</div></div><div></div></li>`;
+      ul.innerHTML = `
+        <li class="crit-item">
+          <div class="crit-left">
+            <div class="crit-name">Sem críticos</div>
+            <div class="crit-mini">Nenhum mínimo violado</div>
+          </div>
+          <div style="font-weight:900;">OK</div>
+        </li>`;
       return;
     }
 
     items.forEach(x => {
       const statusTxt = (x.saldo <= x.min) ? "BAIXO" : "OK";
-      const tr = document.createElement("li");
-      tr.className = "crit-item";
-      tr.innerHTML = `
+      const li = document.createElement("li");
+      li.className = "crit-item";
+      li.innerHTML = `
         <div class="crit-left">
           <div class="crit-name">${x.material}</div>
           <div class="crit-mini">Saldo: ${x.saldo} | Mín: ${x.min}</div>
         </div>
         <div style="font-weight:900;">${statusTxt}</div>
       `;
-      ul.appendChild(tr);
+      ul.appendChild(li);
     });
   }
 
   function updateEstoquePorMaterial(saldoMap) {
     const sel = document.getElementById("dash-materialSelect");
     const material = (sel.value || "").trim();
-
     dashMaterialSelecionado = material;
 
-    if (!material) {
-      setText("dash-materialSaldo", 0);
-      return;
-    }
+    if (!material) { setText("dash-materialSaldo", 0); return; }
     const saldo = Number(saldoMap[material] || 0);
     setText("dash-materialSaldo", saldo);
   }
@@ -630,17 +814,12 @@
     const entradasP = filtrarPorPeriodo(entradasAll);
     const saidasP = filtrarPorPeriodo(saidasAll);
 
-    // saldo (no período)
     const saldoPeriodo = somarPorMaterial(entradasP, saidasP);
 
-    // tabela (no período)
     renderSaldoPorMaterial(saldoPeriodo, minimoMap);
-
-    // cards
     renderCriticosTop5(saldoPeriodo);
     updateEstoquePorMaterial(saldoPeriodo);
 
-    // gráfico
     if (modoAtual === "data") {
       const series = buildDailySeries(entradasP, saidasP);
       drawChartDataMode(series);
@@ -650,7 +829,7 @@
     }
   }
 
-  // ----------------- Ações / Integração -----------------
+  // ----------------- Integração -----------------
   async function carregarMateriais() {
     materiaisList = await apiGet("materiais");
     minimoMap = {};
@@ -658,11 +837,8 @@
 
     fillSelect("entrada-material", materiaisList);
     fillSelect("saida-material", materiaisList);
-
-    // select do dashboard
     fillSelect("dash-materialSelect", materiaisList);
 
-    // tenta manter seleção anterior
     if (dashMaterialSelecionado) {
       document.getElementById("dash-materialSelect").value = dashMaterialSelecionado;
     }
@@ -722,7 +898,6 @@
     }
 
     try {
-      // valida saldo real acumulado
       const saldoReal = somarPorMaterial(entradasAll, saidasAll);
       const saldoAtual = Number(saldoReal[material] || 0);
 
@@ -770,7 +945,6 @@
     await recalcDashboard();
   });
 
-  // mudança do material no card "Estoque por Material"
   document.getElementById("dash-materialSelect").addEventListener("change", async () => {
     await recalcDashboard();
   });
