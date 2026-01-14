@@ -146,18 +146,25 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbxnpeQ96BPuwo09qNnMdfqtme6OD513HKcXOTzXb66Gquln5cdyYVo6pk-5lEL_akFH/exec";
 
-  async function apiPost(payload) {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    return res.json();
-  }
-
   async function apiGet(action) {
     const res = await fetch(`${API_URL}?action=${encodeURIComponent(action)}`);
     return res.json();
+  }
+
+  // ✅ POST SEM CORS/PREFLIGHT (form-urlencoded)
+  async function apiPost(payload) {
+    const body = new URLSearchParams();
+    body.set("payload", JSON.stringify(payload));
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString()
+    });
+
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch { return { ok: false, error: txt || "Resposta inválida" }; }
   }
 
   function val(id) {
@@ -274,7 +281,7 @@
     renderSaidas(rows);
   }
 
-  // --- Botão Entrada ---
+  // --- Entrada ---
   document.getElementById("btn-entrada").addEventListener("click", async () => {
     const data = val("entrada-data");
     const pedido = val("entrada-pedido");
@@ -309,7 +316,7 @@
     }
   });
 
-  // --- Botão Saída ---
+  // --- Saída ---
   document.getElementById("btn-saida").addEventListener("click", async () => {
     const data = val("saida-data");
     const material = val("saida-material");
@@ -323,7 +330,6 @@
     }
 
     try {
-      // garante dashboard carregado pra validar saldo
       if (!lastDashboard) await atualizarDashboard();
 
       const saldoMap = lastDashboard?.saldoPorMaterial || {};
@@ -364,7 +370,7 @@
       await carregarSaidas();
     } catch (err) {
       console.error(err);
-      alert("Erro ao iniciar: verifique permissões da API e tente recarregar (Ctrl+F5).");
+      alert("Erro ao iniciar: verifique permissões da API e recarregue (Ctrl+F5).");
     }
   })();
 </script>
