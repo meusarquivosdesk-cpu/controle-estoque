@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Controle de Estoque</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
     h2 { margin: 0 0 15px 0; }
@@ -34,7 +33,6 @@
 
 <body>
 <div class="container">
-
   <div class="grid-top">
 
     <!-- ENTRADA -->
@@ -42,19 +40,19 @@
       <h2>Entrada de Material</h2>
 
       <div class="form-group">
-        <input id="entrada-data" type="date">
-        <input id="entrada-pedido" type="text" placeholder="N° Pedido">
+        <input id="entrada-data" type="date" />
+        <input id="entrada-pedido" type="text" placeholder="N° Pedido" />
       </div>
 
       <div class="form-group">
         <select id="entrada-material">
           <option value="">Carregando materiais...</option>
         </select>
-        <input id="entrada-qtd" type="number" placeholder="Quantidade" min="0">
+        <input id="entrada-qtd" type="number" placeholder="Quantidade" min="0" />
       </div>
 
       <div class="form-group">
-        <input id="entrada-fornecedor" type="text" placeholder="Fornecedor">
+        <input id="entrada-fornecedor" type="text" placeholder="Fornecedor" />
       </div>
 
       <button class="btn-entrada" id="btn-entrada">Registrar Entrada</button>
@@ -78,19 +76,19 @@
       <h2>Saída de Material</h2>
 
       <div class="form-group">
-        <input id="saida-data" type="date">
+        <input id="saida-data" type="date" />
         <select id="saida-material">
           <option value="">Carregando materiais...</option>
         </select>
       </div>
 
       <div class="form-group">
-        <input id="saida-qtd" type="number" placeholder="Quantidade" min="0">
-        <input id="saida-destino" type="text" placeholder="Destino">
+        <input id="saida-qtd" type="number" placeholder="Quantidade" min="0" />
+        <input id="saida-destino" type="text" placeholder="Destino" />
       </div>
 
       <div class="form-group">
-        <input id="saida-responsavel" type="text" placeholder="Responsável">
+        <input id="saida-responsavel" type="text" placeholder="Responsável" />
       </div>
 
       <button class="btn-saida" id="btn-saida">Registrar Saída</button>
@@ -116,22 +114,22 @@
 
     <div class="cards-dashboard">
       <div class="card-info total">
-        <strong>Estoque Total</strong><br>
+        <strong>Estoque Total</strong><br />
         <span id="dash-estoqueTotal">0</span> Itens
       </div>
 
       <div class="card-info critico">
-        <strong>Materiais Críticos</strong><br>
+        <strong>Materiais Críticos</strong><br />
         <span id="dash-criticos">0</span> Baixo Estoque
       </div>
 
       <div class="card-info uso">
-        <strong>Itens em Uso</strong><br>
+        <strong>Itens em Uso</strong><br />
         <span id="dash-itensEmUso">0</span> Em Campo
       </div>
 
       <div class="card-info disponivel">
-        <strong>Disponíveis</strong><br>
+        <strong>Disponíveis</strong><br />
         <span id="dash-disponiveis">0</span> Em Estoque
       </div>
     </div>
@@ -140,7 +138,6 @@
       📊 Gráfico de Entradas x Saídas x Saldo
     </div>
   </div>
-
 </div>
 
 <script>
@@ -151,7 +148,7 @@
     return res.json();
   }
 
-  // ✅ POST SEM CORS/PREFLIGHT (form-urlencoded)
+  // POST form-urlencoded (evita preflight/CORS no Apps Script)
   async function apiPost(payload) {
     const body = new URLSearchParams();
     body.set("payload", JSON.stringify(payload));
@@ -167,14 +164,8 @@
     catch { return { ok: false, error: txt || "Resposta inválida" }; }
   }
 
-  function val(id) {
-    return (document.getElementById(id)?.value || "").trim();
-  }
-
-  function setText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = String(value ?? 0);
-  }
+  function val(id) { return (document.getElementById(id)?.value || "").trim(); }
+  function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = String(value ?? 0); }
 
   function fmtDateBR(iso) {
     const s = String(iso || "").trim();
@@ -281,7 +272,6 @@
     renderSaidas(rows);
   }
 
-  // --- Entrada ---
   document.getElementById("btn-entrada").addEventListener("click", async () => {
     const data = val("entrada-data");
     const pedido = val("entrada-pedido");
@@ -301,8 +291,6 @@
         return;
       }
 
-      alert("Entrada registrada!");
-
       document.getElementById("entrada-pedido").value = "";
       document.getElementById("entrada-material").value = "";
       document.getElementById("entrada-qtd").value = "";
@@ -310,13 +298,14 @@
 
       await atualizarDashboard();
       await carregarEntradas();
+
+      alert("Entrada registrada!");
     } catch (err) {
       console.error(err);
       alert("Falha na comunicação com a API.");
     }
   });
 
-  // --- Saída ---
   document.getElementById("btn-saida").addEventListener("click", async () => {
     const data = val("saida-data");
     const material = val("saida-material");
@@ -346,8 +335,6 @@
         return;
       }
 
-      alert("Saída registrada!");
-
       document.getElementById("saida-material").value = "";
       document.getElementById("saida-qtd").value = "";
       document.getElementById("saida-destino").value = "";
@@ -355,13 +342,14 @@
 
       await atualizarDashboard();
       await carregarSaidas();
+
+      alert("Saída registrada!");
     } catch (err) {
       console.error(err);
       alert("Falha na comunicação com a API.");
     }
   });
 
-  // Inicialização
   (async () => {
     try {
       await carregarMateriais();
@@ -370,7 +358,7 @@
       await carregarSaidas();
     } catch (err) {
       console.error(err);
-      alert("Erro ao iniciar: verifique permissões da API e recarregue (Ctrl+F5).");
+      alert("Erro ao iniciar: verifique a implantação do Apps Script e recarregue (Ctrl+F5).");
     }
   })();
 </script>
