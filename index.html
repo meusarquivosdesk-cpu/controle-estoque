@@ -73,27 +73,27 @@
       </table>
     </div>
 
-    <!-- SAÍDA (ainda sem integração) -->
+    <!-- SAÍDA -->
     <div class="card saida">
       <h2>Saída de Material</h2>
 
       <div class="form-group">
-        <input type="date">
-        <select>
-          <option>Selecione o Material</option>
+        <input id="saida-data" type="date">
+        <select id="saida-material">
+          <option value="">Carregando materiais...</option>
         </select>
       </div>
 
       <div class="form-group">
-        <input type="number" placeholder="Quantidade">
-        <input type="text" placeholder="Destino">
+        <input id="saida-qtd" type="number" placeholder="Quantidade" min="0">
+        <input id="saida-destino" type="text" placeholder="Destino">
       </div>
 
       <div class="form-group">
-        <input type="text" placeholder="Responsável">
+        <input id="saida-responsavel" type="text" placeholder="Responsável">
       </div>
 
-      <button class="btn-saida">Registrar Saída</button>
+      <button class="btn-saida" id="btn-saida">Registrar Saída</button>
 
       <table>
         <thead>
@@ -104,7 +104,7 @@
             <th>Destino</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="tabela-saidas"></tbody>
       </table>
     </div>
 
@@ -160,8 +160,8 @@
     return res.json();
   }
 
-  function val(elId) {
-    return (document.getElementById(elId)?.value || "").trim();
+  function val(id) {
+    return (document.getElementById(id)?.value || "").trim();
   }
 
   function setText(id, value) {
@@ -176,8 +176,8 @@
     return `${m[3]}/${m[2]}/${m[1]}`;
   }
 
-  function fillSelectMateriais(materiais) {
-    const sel = document.getElementById("entrada-material");
+  function fillSelect(selId, materiais) {
+    const sel = document.getElementById(selId);
     sel.innerHTML = "";
 
     const opt0 = document.createElement("option");
@@ -202,26 +202,19 @@
   }
 
   async function carregarMateriais() {
-    try {
-      const lista = await apiGet("materiais");
-      fillSelectMateriais(lista);
-    } catch (err) {
-      const sel = document.getElementById("entrada-material");
-      sel.innerHTML = `<option value="">Erro ao carregar materiais</option>`;
-      console.error(err);
-    }
+    const lista = await apiGet("materiais");
+    fillSelect("entrada-material", lista);
+    fillSelect("saida-material", lista);
   }
 
+  let lastDashboard = null;
+
   async function atualizarDashboard() {
-    try {
-      const dash = await apiGet("dashboard");
-      setText("dash-estoqueTotal", dash.estoqueTotal ?? 0);
-      setText("dash-criticos", dash.criticos ?? 0);
-      setText("dash-itensEmUso", dash.itensEmUso ?? 0);
-      setText("dash-disponiveis", dash.disponiveis ?? 0);
-    } catch (err) {
-      console.error("Erro ao atualizar dashboard:", err);
-    }
+    lastDashboard = await apiGet("dashboard");
+    setText("dash-estoqueTotal", lastDashboard.estoqueTotal ?? 0);
+    setText("dash-criticos", lastDashboard.criticos ?? 0);
+    setText("dash-itensEmUso", lastDashboard.itensEmUso ?? 0);
+    setText("dash-disponiveis", lastDashboard.disponiveis ?? 0);
   }
 
   function renderEntradas(rows) {
@@ -229,13 +222,11 @@
     tbody.innerHTML = "";
 
     if (!rows || rows.length === 0) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="5" style="color:#777;">Sem entradas registradas</td>`;
-      tbody.appendChild(tr);
+      tbody.innerHTML = `<tr><td colspan="5" style="color:#777;">Sem entradas registradas</td></tr>`;
       return;
     }
 
-    const ordenado = [...rows].sort((a, b) => String(b["Data"] || "").localeCompare(String(a["Data"] || "")));
+    const ordenado = [...rows].sort((a,b) => String(b["Data"]||"").localeCompare(String(a["Data"]||"")));
 
     ordenado.forEach(r => {
       const tr = document.createElement("tr");
@@ -250,36 +241,60 @@
     });
   }
 
-  async function carregarEntradas() {
-    try {
-      const rows = await apiGet("entradas");
-      renderEntradas(rows);
-    } catch (err) {
-      console.error("Erro ao carregar entradas:", err);
+  function renderSaidas(rows) {
+    const tbody = document.getElementById("tabela-saidas");
+    tbody.innerHTML = "";
+
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="color:#777;">Sem saídas registradas</td></tr>`;
+      return;
     }
+
+    const ordenado = [...rows].sort((a,b) => String(b["Data"]||"").localeCompare(String(a["Data"]||"")));
+
+    ordenado.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${fmtDateBR(r["Data"])}</td>
+        <td>${r["Material"] ?? ""}</td>
+        <td>${r["Qtd"] ?? ""}</td>
+        <td>${r["Destino"] ?? ""}</td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
+  async function carregarEntradas() {
+    const rows = await apiGet("entradas");
+    renderEntradas(rows);
+  }
+
+  async function carregarSaidas() {
+    const rows = await apiGet("saidas");
+    renderSaidas(rows);
+  }
+
+  // --- Botão Entrada ---
   document.getElementById("btn-entrada").addEventListener("click", async () => {
     const data = val("entrada-data");
     const pedido = val("entrada-pedido");
     const material = val("entrada-material");
-    const qtd = val("entrada-qtd");
+    const qtd = Number(val("entrada-qtd"));
     const fornecedor = val("entrada-fornecedor");
 
-    if (!data || !material || !qtd) {
-      alert("Preencha pelo menos: Data, Material e Quantidade.");
+    if (!data || !material || !qtd || qtd <= 0) {
+      alert("Preencha: Data, Material e Quantidade (maior que 0).");
       return;
     }
 
     try {
       const resp = await apiPost({ action: "addEntrada", data, pedido, material, qtd, fornecedor });
-
       if (!resp || resp.ok !== true) {
-        alert("Erro ao registrar entrada: " + (resp && resp.error ? resp.error : "sem detalhe"));
+        alert("Erro ao registrar entrada: " + (resp?.error || "sem detalhe"));
         return;
       }
 
-      alert("Entrada registrada com sucesso!");
+      alert("Entrada registrada!");
 
       document.getElementById("entrada-pedido").value = "";
       document.getElementById("entrada-material").value = "";
@@ -288,18 +303,69 @@
 
       await atualizarDashboard();
       await carregarEntradas();
-
     } catch (err) {
-      console.error("Erro ao registrar entrada:", err);
+      console.error(err);
+      alert("Falha na comunicação com a API.");
+    }
+  });
+
+  // --- Botão Saída ---
+  document.getElementById("btn-saida").addEventListener("click", async () => {
+    const data = val("saida-data");
+    const material = val("saida-material");
+    const qtd = Number(val("saida-qtd"));
+    const destino = val("saida-destino");
+    const responsavel = val("saida-responsavel");
+
+    if (!data || !material || !qtd || qtd <= 0 || !destino) {
+      alert("Preencha: Data, Material, Quantidade (maior que 0) e Destino.");
+      return;
+    }
+
+    try {
+      // garante dashboard carregado pra validar saldo
+      if (!lastDashboard) await atualizarDashboard();
+
+      const saldoMap = lastDashboard?.saldoPorMaterial || {};
+      const saldoAtual = Number(saldoMap[material] || 0);
+
+      if (qtd > saldoAtual) {
+        alert(`Saída maior que o saldo!\nSaldo atual de "${material}": ${saldoAtual}\nVocê tentou sair: ${qtd}`);
+        return;
+      }
+
+      const resp = await apiPost({ action: "addSaida", data, material, qtd, destino, responsavel });
+      if (!resp || resp.ok !== true) {
+        alert("Erro ao registrar saída: " + (resp?.error || "sem detalhe"));
+        return;
+      }
+
+      alert("Saída registrada!");
+
+      document.getElementById("saida-material").value = "";
+      document.getElementById("saida-qtd").value = "";
+      document.getElementById("saida-destino").value = "";
+      document.getElementById("saida-responsavel").value = "";
+
+      await atualizarDashboard();
+      await carregarSaidas();
+    } catch (err) {
+      console.error(err);
       alert("Falha na comunicação com a API.");
     }
   });
 
   // Inicialização
   (async () => {
-    await carregarMateriais();
-    await atualizarDashboard();
-    await carregarEntradas();
+    try {
+      await carregarMateriais();
+      await atualizarDashboard();
+      await carregarEntradas();
+      await carregarSaidas();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao iniciar: verifique permissões da API e tente recarregar (Ctrl+F5).");
+    }
   })();
 </script>
 
